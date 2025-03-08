@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package heartbeat;
+
+option go_package = "heartbeat";
+
+
+// the request message containing the ping message
+message HeartbeatPing {
+    uint32 node_id = 1;
+}
+
+// The response message containing the ping response indicating the node is alive
+message HeartbeatPong {
+    bool alive = 1;
+}
+
+service HeartbeatService {
+    rpc Ping(HeartbeatPing) returns (HeartbeatPong);
+}

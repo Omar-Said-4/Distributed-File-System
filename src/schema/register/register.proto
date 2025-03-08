@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+
+package register;
+
+
+option go_package = "register";
+
+message RegisterRequest {
+    string ip = 1;
+    string file_port = 2;
+    string replication_port = 3;
+
+}
+message RegisterResponse {
+    uint32 id = 1;
+    bool success = 2;
+}
+
+service RegisterService {
+    rpc Register (RegisterRequest) returns (RegisterResponse);
+}
