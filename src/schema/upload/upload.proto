@@ -5,9 +5,7 @@ package upload;
 option go_package = "upload";
 
 
-message MasterUploadRequest{
-    bool upload =1;
-}
+message MasterUploadRequest{}
 message MasterUploadResponse{
     string node_ip=1;
     string node_port=2;

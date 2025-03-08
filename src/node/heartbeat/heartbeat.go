@@ -28,7 +28,7 @@ func PingServer(ip string, port string, id uint32) {
 		if err != nil {
 			fmt.Println("Ping failed:", err)
 		} else {
-			fmt.Println("Ping sent successfully")
+			// fmt.Println("Ping sent successfully")
 		}
 
 		conn.Close()                // Close the connection before sleeping
