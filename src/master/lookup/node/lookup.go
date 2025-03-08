@@ -13,6 +13,7 @@ type DataNode struct {
 	alive           bool
 	ReplicationPort string
 	lastPing        time.Time
+	n_files         uint32
 }
 type NodeLookup struct {
 	mutex   sync.RWMutex
@@ -89,4 +90,9 @@ func (table *NodeLookup) CheckNodeIdle(nodeId uint32) bool {
 	defer table.mutex.RUnlock()
 	// max idle time is 5 seconds
 	return time.Since(table.table[nodeId].lastPing) > 5*time.Second
+}
+func (table *NodeLookup) GetNumberOfFiles(nodeId uint32) uint32 {
+	table.mutex.RLock()
+	defer table.mutex.RUnlock()
+	return table.table[nodeId].n_files
 }
