@@ -4,9 +4,9 @@ import (
 	"context"
 	lookup "dfs/master/lookup/file"
 	lookup2 "dfs/master/lookup/node"
+	"dfs/master/replicate"
 	"dfs/schema/upload"
 	"fmt"
-	"net"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
@@ -27,35 +27,34 @@ func (s *uploadServer) NotifyMaster(ctx context.Context, req *upload.NotifyMaste
 
 	nodeID := req.NodeId
 	filename := req.FileInfo.FileName
+	filepath := req.FileInfo.FilePath
 	ip := p.Addr.String()
 
 	fmt.Printf("NotifyMaster from NodeID: %d, IP: %s, Filename: %s\n", nodeID, ip, filename)
-
-	FilesTable.AddFile(filename, nodeID)
 	fmt.Printf("Added file %s to FilesTable\n", filename)
+
+	FilesTable.AddFile(filename, nodeID, filepath)
+	NodesTable.IncrementNumberOfFiles(nodeID)
+	// replicate the file to 2 nodes
+	replicate.NotifyClients(filename, nodeID)
+	replicate.NotifyClients(filename, nodeID)
+	fmt.Printf("Notified clients to Copy for file %s\n", filename)
 
 	return &upload.NotifyMasterResponse{}, nil
 }
 
-func StartNotifyMasterServer(table *lookup.FileLookup, port string) {
+func StartNotifyMasterServer(table *lookup.FileLookup, port string, s *grpc.Server) {
 	FilesTable = table
-	lis, err := net.Listen("tcp", ":"+port)
-	if err != nil {
-		fmt.Printf("failed to listen: %v\n", err)
-		return
-	}
-	s := grpc.NewServer()
+
 	upload.RegisterUploadServiceServer(s, &uploadServer{})
 	fmt.Printf("NotifyMaster Server is running on port: %s\n", port)
-	if err := s.Serve(lis); err != nil {
-		fmt.Printf("failed to serve: %v\n", err)
-	}
+
 }
 
 func (s *uploadServer) MasterRequestUpload(ctx context.Context, req *upload.MasterUploadRequest) (*upload.MasterUploadResponse, error) {
 	// !TODO: Edit this to be chosen based on some criteria from NodesTable
-	node_ip := "localhost"
-	port := "4000"
+	node := NodesTable.GetLeastLoadedNode()
+	node_ip, port := NodesTable.GetNodeFileService(node)
 	_, ok := peer.FromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("failed to get peer info from context")
@@ -66,17 +65,10 @@ func (s *uploadServer) MasterRequestUpload(ctx context.Context, req *upload.Mast
 	}, nil
 }
 
-func StartMasterRequestUploadServer(table *lookup2.NodeLookup, port string) {
+func StartMasterRequestUploadServer(table *lookup2.NodeLookup, port string, s *grpc.Server) {
 	NodesTable = table
-	lis, err := net.Listen("tcp", ":"+port)
-	if err != nil {
-		fmt.Printf("failed to listen: %v\n", err)
-		return
-	}
-	s := grpc.NewServer()
-	upload.RegisterUploadServiceServer(s, &uploadServer{})
+
+	// upload.RegisterUploadServiceServer(s, &uploadServer{})
 	fmt.Printf("MasterRequestUpload Server is running on port: %s\n", port)
-	if err := s.Serve(lis); err != nil {
-		fmt.Printf("failed to serve: %v\n", err)
-	}
+
 }

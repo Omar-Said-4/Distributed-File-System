@@ -5,8 +5,12 @@ import (
 	lookup2 "dfs/master/lookup/file"
 	lookup "dfs/master/lookup/node"
 	"dfs/master/register"
+	"dfs/master/replicate"
 	"dfs/master/upload"
 	"fmt"
+	"net"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -16,10 +20,22 @@ func main() {
 		fmt.Println("Failed to initialize NodesTable")
 		return
 	}
-	go register.StartRegisterServer(NodesTable, "5052")
-	go heartbeat.StartHeartbeatServer(NodesTable, "5051")
+	s := grpc.NewServer()
 	go heartbeat.IsIdle(NodesTable)
-	go upload.StartMasterRequestUploadServer(NodesTable, "5050")
-	go upload.StartNotifyMasterServer(FilesTable, "5055")
+	register.StartRegisterServer(NodesTable, "5052", s)
+	heartbeat.StartHeartbeatServer(NodesTable, "5052", s)
+	upload.StartMasterRequestUploadServer(NodesTable, "5052", s)
+	upload.StartNotifyMasterServer(FilesTable, "5052", s)
+	replicate.StartConfirmCopyServer(FilesTable, NodesTable, "5052", s)
+	go func() {
+		lis, err := net.Listen("tcp", ":5052")
+		if err != nil {
+			fmt.Printf("failed to listen: %v\n", err)
+			return
+		}
+		if err := s.Serve(lis); err != nil {
+			fmt.Printf("failed to serve: %v\n", err)
+		}
+	}()
 	select {}
 }

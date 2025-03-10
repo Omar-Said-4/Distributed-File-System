@@ -20,5 +20,5 @@ func main() {
 	}
 	filename = strings.TrimSpace(filename)
 	fmt.Printf("Client Started\n")
-	upload.MasterRequestUpload("localhost", "5050", filename, clientId)
+	upload.MasterRequestUpload("localhost", "5052", filename, clientId)
 }

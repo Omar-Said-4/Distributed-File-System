@@ -4,12 +4,13 @@ syntax = "proto3";
 package register;
 
 
-option go_package = "register";
+option go_package = "schema/register";
 
 message RegisterRequest {
     string ip = 1;
     string file_port = 2;
     string replication_port = 3;
+    string NotifyToCopyPort = 4;
 
 }
 message RegisterResponse {

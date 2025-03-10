@@ -5,6 +5,7 @@ import (
 	"dfs/schema/register"
 	"fmt"
 	"net"
+	"strconv"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -26,20 +27,33 @@ func getLocalIP() string {
 	}
 	return "127.0.0.1" // Default if no valid IP is found
 }
+func getRandomPort() string {
+	listener, err := net.Listen("tcp", ":0") // Bind to an available port
+	if err != nil {
+		return "" // Handle error appropriately
+	}
+	defer listener.Close()
 
-func Register(port string) uint32 {
+	port := listener.Addr().(*net.TCPAddr).Port
+	return strconv.Itoa(port)
+}
+func Register(port string) (uint32, string, string, string) {
 	ip := getLocalIP() // Get actual local IP
 	// Establish a new connection each time
 	conn, err := grpc.NewClient(ip+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Println("Failed to connect:", err)
-		return 1000000000 // Return a large number as ID to indicate failure
+		return 1000000000, "", "", "" // Return a large number as ID to indicate failure
 	}
 
 	c := register.NewRegisterServiceClient(conn)
 
 	// Send Ping
-	resp, err := c.Register(context.Background(), &register.RegisterRequest{Ip: ip, FilePort: "1", ReplicationPort: "2"})
+	Fport := getRandomPort()
+	Rport := getRandomPort()
+	nCopyport := getRandomPort()
+	fmt.Println("Registering with IP:", ip, "FilePort:", Fport, "ReplicationPort:", Rport, "NotifyToCopyPort:", nCopyport)
+	resp, err := c.Register(context.Background(), &register.RegisterRequest{Ip: ip, FilePort: Fport, ReplicationPort: Rport, NotifyToCopyPort: nCopyport})
 	if err != nil || !resp.Success {
 		fmt.Println("Registration failed:", err)
 	} else {
@@ -47,5 +61,5 @@ func Register(port string) uint32 {
 	}
 
 	conn.Close()
-	return resp.Id
+	return resp.Id, Fport, Rport, nCopyport
 }

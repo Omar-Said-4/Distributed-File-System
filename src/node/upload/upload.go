@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -20,7 +21,14 @@ var nodeID uint32
 var masterIp string
 var masterPort string
 
-func notifyMaster(filename string) {
+func getFilePath(filename string) (string, error) {
+	absPath, err := filepath.Abs(filepath.Join("../uploads", filename))
+	if err != nil {
+		return "", err
+	}
+	return absPath, nil
+}
+func notifyMaster(filename string, filepath string) {
 	conn, err := grpc.NewClient(masterIp+":"+masterPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Printf("Failed to connect to master: %v\n", err)
@@ -33,6 +41,7 @@ func notifyMaster(filename string) {
 		NodeId: nodeID,
 		FileInfo: &upload.FileInfo{
 			FileName: filename,
+			FilePath: filepath,
 		},
 	}
 
@@ -47,6 +56,7 @@ func notifyMaster(filename string) {
 func (s *uploadServer) UploadFile(stream upload.UploadService_UploadFileServer) error {
 	var file *os.File
 	var filename string
+	var file_path string
 	defer func() {
 		if file != nil {
 			file.Close()
@@ -56,7 +66,7 @@ func (s *uploadServer) UploadFile(stream upload.UploadService_UploadFileServer) 
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
-			notifyMaster(filename)
+			notifyMaster(filename, file_path)
 			fmt.Printf("File %s upload complete.\n", filename)
 			return stream.SendAndClose(&upload.UploadFileResponse{})
 		}
@@ -69,11 +79,18 @@ func (s *uploadServer) UploadFile(stream upload.UploadService_UploadFileServer) 
 			filename = data.FileName
 			fmt.Printf("Starting new upload: %s\n", filename)
 
-			file, err = os.Create(filename)
+			file, err = os.Create(filepath.Join("../uploads", filename))
+
 			if err != nil {
 				fmt.Printf("Failed to create file: %v\n", err)
 				return err
 			}
+			file_path, err = getFilePath(filename)
+			if err != nil {
+				fmt.Printf("File %s upload complete.\nError getting file path: %v\n", filename, err)
+				return err
+			}
+			fmt.Printf("File path: %s\n", file_path)
 			continue
 		}
 
@@ -92,9 +109,10 @@ func (s *uploadServer) UploadFile(stream upload.UploadService_UploadFileServer) 
 		}
 	}
 }
-func StartUploadServer(port string, mIp string, mPort string) {
+func StartUploadServer(port string, mIp string, mPort string, id uint32) {
 	masterIp = mIp
 	masterPort = mPort
+	nodeID = id
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		fmt.Printf("failed to listen: %v\n", err)

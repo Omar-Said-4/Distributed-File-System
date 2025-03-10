@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package replicate;
+
+option go_package ="schema/replicate";
+
+
+message NotifyToCopyRequest{
+    string file_name=1;
+    string src_address=2;
+    string src_port=3;
+    string dest_address=4;
+    // true mean dest, false means source
+    bool from =5;
+}
+
+message NotifyToCopyResponse{}
+
+message CopyFileRequest{
+    FileInfo file_info=1;
+}
+message FileInfo{
+    string file_name = 1;
+    string file_path = 2;
+}
+message CopyFileResponse{
+ oneof data{
+        FileInfo file_info=1;
+        bytes chunks = 2;
+    }
+}
+
+message ConfirmCopyRequest{
+    FileInfo file_info=1;
+    uint32 id=2;
+}
+
+message ConfirmCopyResponse{}
+
+service ReplicateService {
+    rpc NotifyToCopy(NotifyToCopyRequest) returns (NotifyToCopyResponse);
+    rpc CopyFile(CopyFileRequest) returns (stream CopyFileResponse);
+    rpc ConfirmCopy(ConfirmCopyRequest) returns (ConfirmCopyResponse);
+}
