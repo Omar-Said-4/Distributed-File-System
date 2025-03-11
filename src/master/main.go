@@ -1,6 +1,7 @@
 package main
 
 import (
+	"dfs/master/download"
 	"dfs/master/heartbeat"
 	lookup2 "dfs/master/lookup/file"
 	lookup "dfs/master/lookup/node"
@@ -27,6 +28,7 @@ func main() {
 	upload.StartMasterRequestUploadServer(NodesTable, "5052", s)
 	upload.StartNotifyMasterServer(FilesTable, "5052", s)
 	replicate.StartConfirmCopyServer(FilesTable, NodesTable, "5052", s)
+	download.StartRequestDownloadInfoServer(FilesTable, NodesTable, "5052", s)
 	go func() {
 		lis, err := net.Listen("tcp", ":5052")
 		if err != nil {

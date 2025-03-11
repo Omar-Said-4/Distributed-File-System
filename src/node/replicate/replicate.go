@@ -131,18 +131,12 @@ func (s *replicateServer) CopyFile(req *replicate.CopyFileRequest, stream replic
 
 }
 
-func StartReplicateServer(port string) {
-	lis, err := net.Listen("tcp", ":"+port)
-	if err != nil {
-		fmt.Printf("failed to listen: %v\n", err)
-		return
-	}
-	s := grpc.NewServer()
+func StartReplicateServer(port string, id uint32, s *grpc.Server) {
+	NodeId = id
+
 	replicate.RegisterReplicateServiceServer(s, &replicateServer{})
 	fmt.Printf("Replicate Server is running on port: %s\n", port)
-	if err := s.Serve(lis); err != nil {
-		fmt.Printf("failed to serve: %v\n", err)
-	}
+
 }
 
 func RequestACopy(filename string, ip string, port string) {
@@ -246,4 +240,5 @@ func ConfirmCopy(filename string) {
 	if err != nil {
 		fmt.Printf("Failed to confirm copy for file %s: %v\n", filename, err)
 	}
+	fmt.Printf("File %s copied successfully, id %d.\n", filename, NodeId)
 }

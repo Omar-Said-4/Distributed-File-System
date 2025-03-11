@@ -75,9 +75,7 @@ func NotifyClients(filename string, id uint32) {
 	if err != nil {
 		fmt.Printf("Failed to notify client for file %s: %v\n", filename, err)
 	}
-	// TODO: to be changed to the confirm, get file path from replica
-	FilesTable.AddReplica(filename, nodeId, "")
-	NodesTable.IncrementNumberOfFiles(nodeId)
+	// fmt.Printf("Notified clients to copy file %s, Id %d\n", filename, nodeId)
 }
 
 func (s *replicateServer) ConfirmCopy(ctx context.Context, req *replicate.ConfirmCopyRequest) (*replicate.ConfirmCopyResponse, error) {
@@ -86,7 +84,7 @@ func (s *replicateServer) ConfirmCopy(ctx context.Context, req *replicate.Confir
 	id := req.Id
 	FilesTable.AddReplica(filename, id, file_path)
 	NodesTable.IncrementNumberOfFiles(id)
-	fmt.Printf("File %s copied successfully.\n, Path: %s\n", filename, file_path)
+	fmt.Printf("File %s copied successfully.\n, Path: %s, Id %d\n", filename, file_path, id)
 	return &replicate.ConfirmCopyResponse{}, nil
 }
 

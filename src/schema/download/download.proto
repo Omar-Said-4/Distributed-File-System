@@ -1,6 +1,22 @@
 syntax = "proto3";
 
-package downlaod;
+package download;
 
-option go_package = "downlaod";
+option go_package = "schema/download";
 
+message MasterDownloadRequest {
+    string file_name = 1;
+}
+
+message IPPort {
+    string ip = 1;
+    string port = 2;
+}
+message MasterDownloadResponse {
+    repeated IPPort ip_ports = 1;
+}
+
+
+service DownloadService {
+    rpc RequestDownloadInfo(MasterDownloadRequest) returns (MasterDownloadResponse);
+}

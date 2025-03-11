@@ -49,11 +49,11 @@ func Register(port string) (uint32, string, string, string) {
 	c := register.NewRegisterServiceClient(conn)
 
 	// Send Ping
-	Fport := getRandomPort()
-	Rport := getRandomPort()
-	nCopyport := getRandomPort()
-	fmt.Println("Registering with IP:", ip, "FilePort:", Fport, "ReplicationPort:", Rport, "NotifyToCopyPort:", nCopyport)
-	resp, err := c.Register(context.Background(), &register.RegisterRequest{Ip: ip, FilePort: Fport, ReplicationPort: Rport, NotifyToCopyPort: nCopyport})
+	Nport := getRandomPort()
+	// Rport := getRandomPort()
+	// nCopyport := getRandomPort()
+	fmt.Println("Registering with IP:", ip, "FilePort:", Nport, "ReplicationPort:", Nport, "NotifyToCopyPort:", Nport)
+	resp, err := c.Register(context.Background(), &register.RegisterRequest{Ip: ip, FilePort: Nport, ReplicationPort: Nport, NotifyToCopyPort: Nport})
 	if err != nil || !resp.Success {
 		fmt.Println("Registration failed:", err)
 	} else {
@@ -61,5 +61,5 @@ func Register(port string) (uint32, string, string, string) {
 	}
 
 	conn.Close()
-	return resp.Id, Fport, Rport, nCopyport
+	return resp.Id, Nport, Nport, Nport
 }

@@ -1,6 +1,7 @@
 package lookup
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -51,10 +52,10 @@ func (table *FileLookup) GetNumberOfReplicas(file_name string) uint32 {
 func (table *FileLookup) GetFileLocation(file_name string) (uint32, uint32, uint32) {
 	table.mutex.RLock()
 	defer table.mutex.RUnlock()
-	if table.table[file_name].n_replicas == 0 {
+	if table.table[file_name].n_replicas == 1 {
 		return table.table[file_name].node_id, table.table[file_name].node_id, table.table[file_name].node_id
 	}
-	if table.table[file_name].n_replicas == 1 {
+	if table.table[file_name].n_replicas == 2 {
 		return table.table[file_name].node_id, table.table[file_name].replica_id1, table.table[file_name].node_id
 	}
 	return table.table[file_name].node_id, table.table[file_name].replica_id1, table.table[file_name].replica_id2
@@ -63,14 +64,15 @@ func (table *FileLookup) AddReplica(file_name string, node_id uint32, filepath s
 	table.mutex.Lock()
 	defer table.mutex.Unlock()
 	table.table[file_name].n_replicas++
-	if table.table[file_name].n_replicas == 1 {
+	if table.table[file_name].n_replicas == 2 {
 		table.table[file_name].replica_id1 = node_id
 		table.table[file_name].file_path1 = filepath
 	}
-	if table.table[file_name].n_replicas == 2 {
+	if table.table[file_name].n_replicas == 3 {
 		table.table[file_name].replica_id2 = node_id
 		table.table[file_name].file_path2 = filepath
 	}
+	fmt.Printf("FileLookup: %v\n", table.table[file_name])
 }
 func (table *FileLookup) RemoveReplica1(file_name string, node_id uint32) {
 	table.mutex.Lock()

@@ -5,7 +5,6 @@ import (
 	"dfs/schema/upload"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"path/filepath"
 
@@ -109,19 +108,11 @@ func (s *uploadServer) UploadFile(stream upload.UploadService_UploadFileServer) 
 		}
 	}
 }
-func StartUploadServer(port string, mIp string, mPort string, id uint32) {
+func StartUploadServer(port string, mIp string, mPort string, id uint32, s *grpc.Server) {
 	masterIp = mIp
 	masterPort = mPort
 	nodeID = id
-	lis, err := net.Listen("tcp", ":"+port)
-	if err != nil {
-		fmt.Printf("failed to listen: %v\n", err)
-		return
-	}
-	s := grpc.NewServer()
 	upload.RegisterUploadServiceServer(s, &uploadServer{})
 	fmt.Printf("Upload Server is running on port: %s\n", port)
-	if err := s.Serve(lis); err != nil {
-		fmt.Printf("failed to serve: %v\n", err)
-	}
+
 }
