@@ -12,7 +12,7 @@ import (
 )
 
 const chunkSize = 4096 // 4KB
-func MasterRequestUpload(ip string, port string, filename string, id uint32) {
+func MasterRequestUpload(ip string, port string, filename string, id string) {
 	conn, err := grpc.NewClient(ip+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Printf("Failed to connect to master at %s:%s - Error: %v\n", ip, port, err)
@@ -33,7 +33,7 @@ func MasterRequestUpload(ip string, port string, filename string, id uint32) {
 	UploadFile(id, filename, resp.NodeIp, resp.NodePort)
 }
 
-func UploadFile(id uint32, filename string, ip string, port string) {
+func UploadFile(id string, filename string, ip string, port string) {
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -54,7 +54,7 @@ func UploadFile(id uint32, filename string, ip string, port string) {
 		return
 	}
 	// concatenate id and filename to create a unique filename
-	fileInfo := &upload.FileInfo{FileName: fmt.Sprintf("%d_%s", id, filename)}
+	fileInfo := &upload.FileInfo{FileName: fmt.Sprintf("%s_%s", id, filename)}
 	err = stream.Send(&upload.UploadFileRequest{Data: &upload.UploadFileRequest_FileInfo{FileInfo: fileInfo}})
 	if err != nil {
 		fmt.Printf("Failed to send file info: %v\n", err)

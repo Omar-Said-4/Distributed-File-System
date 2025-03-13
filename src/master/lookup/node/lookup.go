@@ -7,6 +7,11 @@ import (
 	"time"
 )
 
+type uploading struct {
+	Filename  string
+	othernode uint32
+	src       bool
+}
 type DataNode struct {
 	NodeId           uint32
 	Ip               string
@@ -16,13 +21,18 @@ type DataNode struct {
 	lastPing         time.Time
 	n_files          uint32
 	files            []string
+	uploading        []uploading
+	n_uploading      uint32
 	NotifyToCopyPort string
 }
+
 type NodeHeap []*DataNode
 
-func (h NodeHeap) Len() int           { return len(h) }
-func (h NodeHeap) Less(i, j int) bool { return h[i].n_files < h[j].n_files }
-func (h NodeHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h NodeHeap) Len() int { return len(h) }
+func (h NodeHeap) Less(i, j int) bool {
+	return int(h[i].n_files)+int(h[i].n_uploading) < int(h[j].n_files)+int(h[i].n_uploading)
+}
+func (h NodeHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 func (h *NodeHeap) Push(x interface{}) {
 	*h = append(*h, x.(*DataNode))
 }
@@ -158,8 +168,14 @@ func (table *NodeLookup) GetLeastLoadedNode() uint32 {
 	if len(table.heap) == 0 {
 		return 0
 	}
-
-	return table.heap[0].NodeId
+	tempHeap := make(NodeHeap, len(table.heap))
+	copy(tempHeap, table.heap)
+	heap.Init(&tempHeap)
+	leastLoaded := heap.Pop(&tempHeap).(*DataNode)
+	for !leastLoaded.alive {
+		leastLoaded = heap.Pop(&tempHeap).(*DataNode)
+	}
+	return leastLoaded.NodeId
 }
 func (table *NodeLookup) GetLeastLoadedNodes(n int) []uint32 {
 	table.mutex.RLock()
@@ -172,14 +188,23 @@ func (table *NodeLookup) GetLeastLoadedNodes(n int) []uint32 {
 	copy(tempHeap, table.heap)
 	heap.Init(&tempHeap)
 	result := []uint32{}
-	for i := 0; i < n && len(tempHeap) > 0; i++ {
+	i := 0
+	for i < n && len(tempHeap) > 0 {
 		// Extract min element
 		leastLoaded := heap.Pop(&tempHeap).(*DataNode)
-		result = append(result, leastLoaded.NodeId)
+		if leastLoaded.alive {
+			result = append(result, leastLoaded.NodeId)
+			i++
+		} else {
+			i-- // Skip dead nodes
+		}
 	}
 	// handle case where n > number of nodes
+
 	for len(result) < n {
-		result = append(result, result[len(result)%len(table.heap)])
+		fmt.Printf("len result: %d, len heap: %d\n", len(result), len(table.heap))
+		result = append(result, result[i%len(result)])
+		i++
 	}
 	fmt.Printf("Least loaded nodes: %v\n", result)
 	return result
@@ -208,4 +233,32 @@ func (table *NodeLookup) GetNodeFiles(nodeId uint32) []string {
 	table.mutex.RLock()
 	defer table.mutex.RUnlock()
 	return table.table[nodeId].files
+}
+func (table *NodeLookup) AddUploadingFile(nodeId uint32, filename string, othernode uint32, src bool) {
+	table.mutex.Lock()
+	defer table.mutex.Unlock()
+	table.table[nodeId].uploading = append(table.table[nodeId].uploading, uploading{filename, othernode, src})
+	if !src {
+		table.table[nodeId].n_uploading++
+	}
+}
+func (table *NodeLookup) RemoveUploadingFile(nodeId uint32, filename string) uint32 {
+	table.mutex.Lock()
+	defer table.mutex.Unlock()
+	for i, f := range table.table[nodeId].uploading {
+		if f.Filename == filename {
+			otherId := f.othernode
+			table.table[nodeId].uploading = append(table.table[nodeId].uploading[:i], table.table[nodeId].uploading[i+1:]...)
+			if !f.src {
+				table.table[nodeId].n_uploading--
+			}
+			return otherId
+		}
+	}
+	return ^uint32(0)
+}
+func (table *NodeLookup) GetNodeUploadingFiles(nodeId uint32) []uploading {
+	table.mutex.RLock()
+	defer table.mutex.RUnlock()
+	return table.table[nodeId].uploading
 }

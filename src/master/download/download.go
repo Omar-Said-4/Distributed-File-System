@@ -24,7 +24,10 @@ func (s *downloadServer) RequestDownloadInfo(ctx context.Context, req *download.
 
 	filename := req.GetFileName()
 
-	nodeId, r1, r2 := FilesTable.GetFileLocation(filename)
+	nodeId, r1, r2, err := FilesTable.GetFileLocation(filename)
+	if err != nil {
+		return nil, err
+	}
 	fmt.Printf("Nodes for file %s: %d, %d, %d\n", filename, nodeId, r1, r2)
 	node1_ip, node1_port := NodesTable.GetNodeFileService(nodeId)
 	node2_ip, node2_port := NodesTable.GetNodeFileService(r1)

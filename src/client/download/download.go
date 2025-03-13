@@ -15,7 +15,7 @@ import (
 )
 
 func cleanFilename(filename string) string {
-	re := regexp.MustCompile(`^\d+_`)
+	re := regexp.MustCompile(`^[^_]+_\d+_`)
 	return re.ReplaceAllString(filename, "")
 }
 func RequestDownloadInfo(filename, ip, port string) error {
@@ -56,26 +56,27 @@ func RequestDownloadInfo(filename, ip, port string) error {
 			mu.Lock()
 			chunkData[i] = data
 			mu.Unlock()
+			fmt.Printf("Downloaded chunk %d from %s:%s\n", i, node.Ip, node.Port)
 		}()
-		wg.Wait()
-		cleaned_filename := cleanFilename(filename)
-		out_path := fmt.Sprintf("../downloads/%s", cleaned_filename)
-		file, err := os.Create(out_path)
+	}
+	wg.Wait()
+	cleaned_filename := cleanFilename(filename)
+	out_path := fmt.Sprintf("../downloads/%s", cleaned_filename)
+	file, err := os.Create(out_path)
+	if err != nil {
+		fmt.Printf("Failed to create output file: %v\n", err)
+		return err
+	}
+	defer file.Close()
+	for _, data := range chunkData {
+		_, err := file.Write(data)
 		if err != nil {
-			fmt.Printf("Failed to create output file: %v\n", err)
+			fmt.Printf("Failed to write to file: %v\n", err)
 			return err
 		}
-		defer file.Close()
-		for _, data := range chunkData {
-			_, err := file.Write(data)
-			if err != nil {
-				fmt.Printf("Failed to write to file: %v\n", err)
-				return err
-			}
-		}
-		fmt.Printf("Successfully downloaded file %s chunk %d\n", filename, i)
-
 	}
+	fmt.Printf("Successfully downloaded file %s\n", filename)
+
 	return nil
 
 }

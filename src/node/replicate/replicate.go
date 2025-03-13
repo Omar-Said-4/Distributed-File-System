@@ -30,7 +30,7 @@ func getFilePath(filename string) (string, error) {
 	return absPath, nil
 }
 
-// handle the cse when the file is still being received
+// handle the case when the file is still being received
 func waitUntilFileStable(filename string, checkInterval time.Duration) {
 	var lastSize int64 = -1
 
@@ -90,7 +90,8 @@ func (s *replicateServer) CopyFile(req *replicate.CopyFileRequest, stream replic
 	if !IsAcceptedFile(filename, clientIP) {
 		return fmt.Errorf("file %s is not accepted to be copied", filename)
 	}
-	file, err := os.Open(filename)
+	filepath := filepath.Join("../uploads", filename)
+	file, err := os.Open(filepath)
 	if err != nil {
 		return err
 	}
@@ -161,7 +162,7 @@ func RequestACopy(filename string, ip string, port string) {
 	for {
 		resp, err := stream.Recv()
 		if err == io.EOF {
-			fmt.Printf("File %s copied successfully.\n", filename)
+			// fmt.Printf("File %s copied successfully.\n", filename)
 			ConfirmCopy(filename)
 			return
 		}

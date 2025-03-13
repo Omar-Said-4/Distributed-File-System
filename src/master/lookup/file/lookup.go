@@ -14,6 +14,7 @@ type File struct {
 	replica_id2 uint32
 	file_path2  string
 	n_replicas  uint32
+	n_uploading uint32
 	file_size   uint64
 }
 
@@ -30,11 +31,12 @@ func AddFileTable() *FileLookup {
 
 func (table *FileLookup) AddFile(file_name string, node_id uint32, filepath string, file_size uint64) {
 	file := &File{
-		file_name:  file_name,
-		node_id:    node_id,
-		file_path:  filepath,
-		file_size:  file_size,
-		n_replicas: 1,
+		file_name:   file_name,
+		node_id:     node_id,
+		file_path:   filepath,
+		file_size:   file_size,
+		n_replicas:  1,
+		n_uploading: 0,
 	}
 	table.mutex.Lock()
 	defer table.mutex.Unlock()
@@ -51,16 +53,19 @@ func (table *FileLookup) GetNumberOfReplicas(file_name string) uint32 {
 	defer table.mutex.RUnlock()
 	return table.table[file_name].n_replicas
 }
-func (table *FileLookup) GetFileLocation(file_name string) (uint32, uint32, uint32) {
+func (table *FileLookup) GetFileLocation(file_name string) (uint32, uint32, uint32, error) {
 	table.mutex.RLock()
 	defer table.mutex.RUnlock()
+	if _, ok := table.table[file_name]; !ok {
+		return 0, 0, 0, fmt.Errorf("File %s not found", file_name)
+	}
 	if table.table[file_name].n_replicas == 1 {
-		return table.table[file_name].node_id, table.table[file_name].node_id, table.table[file_name].node_id
+		return table.table[file_name].node_id, table.table[file_name].node_id, table.table[file_name].node_id, nil
 	}
 	if table.table[file_name].n_replicas == 2 {
-		return table.table[file_name].node_id, table.table[file_name].replica_id1, table.table[file_name].node_id
+		return table.table[file_name].node_id, table.table[file_name].replica_id1, table.table[file_name].node_id, nil
 	}
-	return table.table[file_name].node_id, table.table[file_name].replica_id1, table.table[file_name].replica_id2
+	return table.table[file_name].node_id, table.table[file_name].replica_id1, table.table[file_name].replica_id2, nil
 }
 func (table *FileLookup) AddReplica(file_name string, node_id uint32, filepath string) {
 	table.mutex.Lock()
@@ -74,16 +79,16 @@ func (table *FileLookup) AddReplica(file_name string, node_id uint32, filepath s
 		table.table[file_name].replica_id2 = node_id
 		table.table[file_name].file_path2 = filepath
 	}
-	fmt.Printf("FileLookup: %v\n", table.table[file_name])
+	// fmt.Printf("FileLookup: %v\n", table.table[file_name])
 }
 func (table *FileLookup) RemoveReplica1(file_name string, node_id uint32) {
 	table.mutex.Lock()
 	defer table.mutex.Unlock()
 	table.table[file_name].n_replicas--
-	if table.table[file_name].n_replicas == 3 {
+	if table.table[file_name].n_replicas == 2 {
 		table.table[file_name].replica_id1 = table.table[file_name].replica_id2
 		table.table[file_name].replica_id2 = node_id
-	} else if table.table[file_name].n_replicas == 2 {
+	} else if table.table[file_name].n_replicas == 1 {
 		table.table[file_name].replica_id1 = node_id
 	}
 }
@@ -97,10 +102,10 @@ func (table *FileLookup) RemoveMainNode(file_name string, node_id uint32) {
 	table.mutex.Lock()
 	defer table.mutex.Unlock()
 	table.table[file_name].n_replicas--
-	if table.table[file_name].n_replicas == 3 {
+	if table.table[file_name].n_replicas == 2 {
 		table.table[file_name].node_id = table.table[file_name].replica_id1
 		table.table[file_name].replica_id1 = table.table[file_name].replica_id2
-	} else if table.table[file_name].n_replicas == 2 {
+	} else if table.table[file_name].n_replicas == 1 {
 		table.table[file_name].node_id = table.table[file_name].replica_id1
 	}
 }
@@ -115,4 +120,42 @@ func (table *FileLookup) GetFileSize(file_name string) uint64 {
 	table.mutex.RLock()
 	defer table.mutex.RUnlock()
 	return table.table[file_name].file_size
+}
+
+func (table *FileLookup) GetNumberUploading(file_name string) uint32 {
+	table.mutex.RLock()
+	defer table.mutex.RUnlock()
+	return table.table[file_name].n_uploading
+}
+
+func (table *FileLookup) IncrementNumberUploading(file_name string) error {
+	table.mutex.Lock()
+	defer table.mutex.Unlock()
+	if table.table[file_name].n_uploading >= 2 {
+		return fmt.Errorf("File %s is already being uploaded by 2 nodes", file_name)
+	}
+	table.table[file_name].n_uploading++
+	return nil
+}
+
+func (table *FileLookup) DecrementNumberUploading(file_name string) {
+	table.mutex.Lock()
+	defer table.mutex.Unlock()
+	table.table[file_name].n_uploading--
+}
+
+func (table *FileLookup) GetFilePaths(file_name string) (string, string, string) {
+	table.mutex.RLock()
+	defer table.mutex.RUnlock()
+	return table.table[file_name].file_path, table.table[file_name].file_path1, table.table[file_name].file_path2
+}
+
+func (table *FileLookup) GetFileNames() []string {
+	table.mutex.RLock()
+	defer table.mutex.RUnlock()
+	var result []string
+	for k := range table.table {
+		result = append(result, k)
+	}
+	return result
 }

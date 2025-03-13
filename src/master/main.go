@@ -22,7 +22,9 @@ func main() {
 		return
 	}
 	s := grpc.NewServer()
-	go heartbeat.IsIdle(NodesTable)
+	heartbeat.Init(FilesTable)
+	go heartbeat.IsIdle(NodesTable, FilesTable)
+	go heartbeat.FilesCheck()
 	register.StartRegisterServer(NodesTable, "5052", s)
 	heartbeat.StartHeartbeatServer(NodesTable, "5052", s)
 	upload.StartMasterRequestUploadServer(NodesTable, "5052", s)
