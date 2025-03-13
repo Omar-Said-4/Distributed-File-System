@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	DownloadService_RequestDownloadInfo_FullMethodName = "/download.DownloadService/RequestDownloadInfo"
+	DownloadService_DownloadChunk_FullMethodName       = "/download.DownloadService/DownloadChunk"
 )
 
 // DownloadServiceClient is the client API for DownloadService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DownloadServiceClient interface {
 	RequestDownloadInfo(ctx context.Context, in *MasterDownloadRequest, opts ...grpc.CallOption) (*MasterDownloadResponse, error)
+	DownloadChunk(ctx context.Context, in *ChunkDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChunkDownloadResponse], error)
 }
 
 type downloadServiceClient struct {
@@ -47,11 +49,31 @@ func (c *downloadServiceClient) RequestDownloadInfo(ctx context.Context, in *Mas
 	return out, nil
 }
 
+func (c *downloadServiceClient) DownloadChunk(ctx context.Context, in *ChunkDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChunkDownloadResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &DownloadService_ServiceDesc.Streams[0], DownloadService_DownloadChunk_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ChunkDownloadRequest, ChunkDownloadResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DownloadService_DownloadChunkClient = grpc.ServerStreamingClient[ChunkDownloadResponse]
+
 // DownloadServiceServer is the server API for DownloadService service.
 // All implementations must embed UnimplementedDownloadServiceServer
 // for forward compatibility.
 type DownloadServiceServer interface {
 	RequestDownloadInfo(context.Context, *MasterDownloadRequest) (*MasterDownloadResponse, error)
+	DownloadChunk(*ChunkDownloadRequest, grpc.ServerStreamingServer[ChunkDownloadResponse]) error
 	mustEmbedUnimplementedDownloadServiceServer()
 }
 
@@ -64,6 +86,9 @@ type UnimplementedDownloadServiceServer struct{}
 
 func (UnimplementedDownloadServiceServer) RequestDownloadInfo(context.Context, *MasterDownloadRequest) (*MasterDownloadResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestDownloadInfo not implemented")
+}
+func (UnimplementedDownloadServiceServer) DownloadChunk(*ChunkDownloadRequest, grpc.ServerStreamingServer[ChunkDownloadResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method DownloadChunk not implemented")
 }
 func (UnimplementedDownloadServiceServer) mustEmbedUnimplementedDownloadServiceServer() {}
 func (UnimplementedDownloadServiceServer) testEmbeddedByValue()                         {}
@@ -104,6 +129,17 @@ func _DownloadService_RequestDownloadInfo_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DownloadService_DownloadChunk_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ChunkDownloadRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(DownloadServiceServer).DownloadChunk(m, &grpc.GenericServerStream[ChunkDownloadRequest, ChunkDownloadResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DownloadService_DownloadChunkServer = grpc.ServerStreamingServer[ChunkDownloadResponse]
+
 // DownloadService_ServiceDesc is the grpc.ServiceDesc for DownloadService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -116,6 +152,12 @@ var DownloadService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DownloadService_RequestDownloadInfo_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "DownloadChunk",
+			Handler:       _DownloadService_DownloadChunk_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "download.proto",
 }

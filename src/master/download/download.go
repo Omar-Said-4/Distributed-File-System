@@ -35,6 +35,7 @@ func (s *downloadServer) RequestDownloadInfo(ctx context.Context, req *download.
 			{Ip: node2_ip, Port: node2_port},
 			{Ip: node3_ip, Port: node3_port},
 		},
+		FileSize: FilesTable.GetFileSize(filename),
 	}, nil
 }
 

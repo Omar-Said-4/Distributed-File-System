@@ -1,6 +1,7 @@
 package main
 
 import (
+	"dfs/node/download"
 	"dfs/node/heartbeat"
 	"dfs/node/register"
 	"dfs/node/replicate"
@@ -35,6 +36,7 @@ func main() {
 	// }()
 
 	replicate.StartReplicateServer(RepPort, id, s)
+	download.StartDownloadServer(Fport, s)
 	if err := s.Serve(lis); err != nil {
 		fmt.Printf("failed to serve: %v\n", err)
 	}

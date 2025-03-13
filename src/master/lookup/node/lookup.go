@@ -15,6 +15,7 @@ type DataNode struct {
 	ReplicationPort  string
 	lastPing         time.Time
 	n_files          uint32
+	files            []string
 	NotifyToCopyPort string
 }
 type NodeHeap []*DataNode
@@ -187,4 +188,24 @@ func (table *NodeLookup) GetNotifyToCopyPort(nodeId uint32) string {
 	table.mutex.RLock()
 	defer table.mutex.RUnlock()
 	return table.table[nodeId].NotifyToCopyPort
+}
+func (table *NodeLookup) AddFileToNode(nodeId uint32, filename string) {
+	table.mutex.Lock()
+	defer table.mutex.Unlock()
+	table.table[nodeId].files = append(table.table[nodeId].files, filename)
+}
+func (table *NodeLookup) RemoveFileFromNode(nodeId uint32, filename string) {
+	table.mutex.Lock()
+	defer table.mutex.Unlock()
+	for i, f := range table.table[nodeId].files {
+		if f == filename {
+			table.table[nodeId].files = append(table.table[nodeId].files[:i], table.table[nodeId].files[i+1:]...)
+			break
+		}
+	}
+}
+func (table *NodeLookup) GetNodeFiles(nodeId uint32) []string {
+	table.mutex.RLock()
+	defer table.mutex.RUnlock()
+	return table.table[nodeId].files
 }

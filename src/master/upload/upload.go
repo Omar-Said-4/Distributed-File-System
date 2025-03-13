@@ -28,13 +28,15 @@ func (s *uploadServer) NotifyMaster(ctx context.Context, req *upload.NotifyMaste
 	nodeID := req.NodeId
 	filename := req.FileInfo.FileName
 	filepath := req.FileInfo.FilePath
+	filesize := req.FileInfo.FileSize
 	ip := p.Addr.String()
 
 	fmt.Printf("NotifyMaster from NodeID: %d, IP: %s, Filename: %s\n", nodeID, ip, filename)
 	fmt.Printf("Added file %s to FilesTable\n", filename)
 
-	FilesTable.AddFile(filename, nodeID, filepath)
+	FilesTable.AddFile(filename, nodeID, filepath, filesize)
 	NodesTable.IncrementNumberOfFiles(nodeID)
+	NodesTable.AddFileToNode(nodeID, filename)
 	// replicate the file to 2 nodes
 	replicate.NotifyClients(filename, nodeID)
 	replicate.NotifyClients(filename, nodeID)

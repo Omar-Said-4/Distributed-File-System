@@ -5,6 +5,7 @@ import (
 	"dfs/schema/upload"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -27,7 +28,7 @@ func getFilePath(filename string) (string, error) {
 	}
 	return absPath, nil
 }
-func notifyMaster(filename string, filepath string) {
+func notifyMaster(filename string, filepath string, filesize uint64) {
 	conn, err := grpc.NewClient(masterIp+":"+masterPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Printf("Failed to connect to master: %v\n", err)
@@ -41,6 +42,7 @@ func notifyMaster(filename string, filepath string) {
 		FileInfo: &upload.FileInfo{
 			FileName: filename,
 			FilePath: filepath,
+			FileSize: filesize,
 		},
 	}
 
@@ -65,7 +67,13 @@ func (s *uploadServer) UploadFile(stream upload.UploadService_UploadFileServer) 
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
-			notifyMaster(filename, file_path)
+			fileInfo, err := os.Stat(file_path)
+			if err != nil {
+				log.Fatalf("Failed to get file info: %v", err)
+			}
+			fileSize := fileInfo.Size()
+			fmt.Printf("File size: %d bytes\n", fileSize)
+			notifyMaster(filename, file_path, uint64(fileSize))
 			fmt.Printf("File %s upload complete.\n", filename)
 			return stream.SendAndClose(&upload.UploadFileResponse{})
 		}

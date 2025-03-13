@@ -84,6 +84,7 @@ func (s *replicateServer) ConfirmCopy(ctx context.Context, req *replicate.Confir
 	id := req.Id
 	FilesTable.AddReplica(filename, id, file_path)
 	NodesTable.IncrementNumberOfFiles(id)
+	NodesTable.AddFileToNode(id, filename)
 	fmt.Printf("File %s copied successfully.\n, Path: %s, Id %d\n", filename, file_path, id)
 	return &replicate.ConfirmCopyResponse{}, nil
 }

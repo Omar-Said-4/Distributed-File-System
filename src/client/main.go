@@ -26,8 +26,9 @@ func main() {
 
 	time.Sleep(3 * time.Second)
 	filename = fmt.Sprintf("%d_%s", clientId, filename)
-	info, _ := download.RequestDownloadInfo(filename, "localhost", "5052")
-	for _, ipport := range info {
-		fmt.Printf("Ip: %s, Port: %s\n", ipport.Ip, ipport.Port)
+	err = download.RequestDownloadInfo(filename, "localhost", "5052")
+	if err != nil {
+		fmt.Println(err)
 	}
+
 }
