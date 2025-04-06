@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 
 	ui "dfs/client/interface"
 	"fmt"
@@ -10,7 +11,13 @@ import (
 	"strings"
 )
 
+type ServerConfig struct {
+	ServerIP   string `json:"serverIP"`
+	ServerPort string `json:"serverPort"`
+}
+
 func getMachineID() string {
+
 	cmd := exec.Command("wmic", "csproduct", "get", "UUID")
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -30,6 +37,18 @@ func uniqueID() string {
 	return fmt.Sprintf("%s_%d", machineID, pid)
 }
 func main() {
+	configPath := "config/config.json"
+	file, err := os.ReadFile(configPath)
+	if err != nil {
+		fmt.Printf("Error reading config file: %v\n", err)
+		return
+	}
+	var config ServerConfig
+	err = json.Unmarshal(file, &config)
+	if err != nil {
+		fmt.Printf("Error parsing config file: %v\n", err)
+		return
+	}
 
 	clientId := uniqueID()
 	fmt.Printf("Client Started with ID %s\n", clientId)
@@ -43,9 +62,9 @@ func main() {
 		fmt.Scanln(&choice)
 		switch choice {
 		case 1:
-			ui.UploadFile(clientId)
+			ui.UploadFile(clientId, config.ServerIP, config.ServerPort)
 		case 2:
-			ui.DownloadFile(clientId)
+			ui.DownloadFile(clientId, config.ServerIP, config.ServerPort)
 		case 3:
 			fmt.Println("Exiting...")
 			return

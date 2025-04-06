@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func UploadFile(id string) {
+func UploadFile(id string, serverIP string, serverPort string) {
 	fmt.Print("Please Enter filename to upload: ")
 	reader := bufio.NewReader(os.Stdin)
 	filename, err := reader.ReadString('\n')
@@ -18,10 +18,10 @@ func UploadFile(id string) {
 		return
 	}
 	filename = strings.TrimSpace(filename)
-	upload.MasterRequestUpload("localhost", "5052", filename, id)
+	upload.MasterRequestUpload(serverIP, serverPort, filename, id)
 }
 
-func DownloadFile(id string) {
+func DownloadFile(id string, serverIP string, serverPort string) {
 	fmt.Print("Please Enter filename to download: ")
 	reader := bufio.NewReader(os.Stdin)
 	filename, err := reader.ReadString('\n')
@@ -31,7 +31,7 @@ func DownloadFile(id string) {
 	}
 	filename = strings.TrimSpace(filename)
 	filename = fmt.Sprintf("%s_%s", id, filename)
-	err = download.RequestDownloadInfo(filename, "localhost", "5052")
+	err = download.RequestDownloadInfo(filename, serverIP, serverPort)
 	if err != nil {
 		fmt.Println(err)
 	}

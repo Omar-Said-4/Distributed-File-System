@@ -28,6 +28,7 @@ func (s *heartbeatServer) Ping(ctx context.Context, req *heartbeat.HeartbeatPing
 	// revive the node if it was dead
 	if !NodesTable.GetNodeAlive(node_id) {
 		NodesTable.SetNodeAlive(node_id)
+		fmt.Printf("Node %d is alive again\n", node_id)
 	}
 	return &heartbeat.HeartbeatPong{}, nil
 }
