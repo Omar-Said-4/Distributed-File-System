@@ -100,7 +100,7 @@ func main() {
 	// 	replicate.StartNotifytoCopyServer(NotifyToCopyPort, id)
 	// }()
 
-	replicate.StartReplicateServer(RepPort, id, s)
+	replicate.StartReplicateServer(config.ServerIP,config.ServerPort,RepPort, id, s)
 	download.StartDownloadServer(Fport, s)
 	if err := s.Serve(lis); err != nil {
 		fmt.Printf("failed to serve: %v\n", err)

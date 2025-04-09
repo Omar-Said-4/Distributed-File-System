@@ -21,7 +21,8 @@ const chunkSize = 4096 // 4KB
 var acceptedFilesToCopy = make(map[string]string)
 var rwMu sync.RWMutex
 var NodeId uint32
-
+var serverIP string
+var serverPort string
 func getFilePath(filename string) (string, error) {
 	absPath, err := filepath.Abs(filepath.Join("../copies", filename))
 	if err != nil {
@@ -132,15 +133,16 @@ func (s *replicateServer) CopyFile(req *replicate.CopyFileRequest, stream replic
 
 }
 
-func StartReplicateServer(port string, id uint32, s *grpc.Server) {
+func StartReplicateServer(sIP string,sPort string,port string, id uint32, s *grpc.Server) {
 	NodeId = id
-
+    serverIP = sIP
+	serverPort = sPort
 	replicate.RegisterReplicateServiceServer(s, &replicateServer{})
 	fmt.Printf("Replicate Server is running on port: %s\n", port)
 
 }
 
-func RequestACopy(filename string, ip string, port string) {
+func RequestACopy(serverIP string, serverPort string,filename string, ip string, port string) {
 	var file *os.File
 	conn, err := grpc.NewClient(ip+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -162,8 +164,8 @@ func RequestACopy(filename string, ip string, port string) {
 	for {
 		resp, err := stream.Recv()
 		if err == io.EOF {
-			// fmt.Printf("File %s copied successfully.\n", filename)
-			ConfirmCopy(filename)
+			fmt.Printf("File %s copied successfully, nodeId = %d.\n", filename,NodeId)
+			ConfirmCopy(serverIP,serverPort,filename)
 			return
 		}
 		if err != nil {
@@ -202,7 +204,7 @@ func (s *replicateServer) NotifyToCopy(ctx context.Context, req *replicate.Notif
 		ip := req.SrcAddress
 		port := req.SrcPort
 		fmt.Printf("Node notified to copy %s from %s\n", filename, ip)
-		RequestACopy(filename, ip, port)
+		RequestACopy(serverIP,serverPort,filename, ip, port)
 	}
 	return &replicate.NotifyToCopyResponse{}, nil
 }
@@ -222,9 +224,9 @@ func StartNotifytoCopyServer(port string, id uint32) {
 	}
 }
 
-func ConfirmCopy(filename string) {
+func ConfirmCopy(serverIP,Port,filename string) {
 	file_path, _ := getFilePath(filename)
-	conn, err := grpc.NewClient("localhost:5052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(serverIP+ ":" + Port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Printf("Failed to connect to master at %s - Error: %v\n", "localhost:5052", err)
 		return

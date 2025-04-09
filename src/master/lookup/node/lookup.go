@@ -30,7 +30,7 @@ type NodeHeap []*DataNode
 
 func (h NodeHeap) Len() int { return len(h) }
 func (h NodeHeap) Less(i, j int) bool {
-	return int(h[i].n_files)+int(h[i].n_uploading) < int(h[j].n_files)+int(h[i].n_uploading)
+	return int(h[i].n_files)+int(h[i].n_uploading) < int(h[j].n_files)+int(h[j].n_uploading)
 }
 func (h NodeHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 func (h *NodeHeap) Push(x interface{}) {
