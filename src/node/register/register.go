@@ -12,20 +12,35 @@ import (
 )
 
 func getLocalIP() string {
-	return "127.0.0.1"
-	addrs, err := net.InterfaceAddrs()
+	interfaces, err := net.Interfaces()
 	if err != nil {
-		fmt.Println("Error getting local IP:", err)
-		return "127.0.0.1" // Fallback to localhost
+		fmt.Println("Error getting interfaces:", err)
+		return "127.0.0.1"
 	}
-	for _, addr := range addrs {
-		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
-			if ipNet.IP.To4() != nil {
-				return ipNet.IP.String()
+
+	for _, iface := range interfaces {
+		// Skip interfaces that are down or loopback
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			if ipNet, ok := addr.(*net.IPNet); ok {
+				ip := ipNet.IP
+				// Check for valid IPv4 (non-loopback, non-link-local)
+				if ip.To4() != nil && !ip.IsLoopback() && !ip.IsLinkLocalUnicast() {
+					return ip.String()
+				}
 			}
 		}
 	}
-	return "127.0.0.1" // Default if no valid IP is found
+
+	return "127.0.0.1"
 }
 func getRandomPort() string {
 	listener, err := net.Listen("tcp", ":0") // Bind to an available port

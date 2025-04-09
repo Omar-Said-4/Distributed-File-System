@@ -55,6 +55,7 @@ func NotifyClients(filename string, id uint32) {
 		return
 	}
 	nodeId, err := getNodeIdToCopyTo(filename)
+	// fmt.Printf("Node ID to replicate from %d", nodeId)
 	if err != nil {
 		fmt.Printf("Failed to get node to copy to for file %s: %v\n", filename, err)
 		FilesTable.DecrementNumberUploading(filename)
@@ -74,6 +75,7 @@ func NotifyClients(filename string, id uint32) {
 		NodesTable.RemoveUploadingFile(id, filename)
 		return
 	}
+	fmt.Printf("Src IP %s and Src Port %s", src_ip, src_port)
 	defer conn1.Close()
 	client := replicate.NewReplicateServiceClient(conn1)
 	_, err = client.NotifyToCopy(context.Background(), &replicate.NotifyToCopyRequest{
@@ -103,8 +105,8 @@ func NotifyClients(filename string, id uint32) {
 	client = replicate.NewReplicateServiceClient(conn2)
 	_, err = client.NotifyToCopy(context.Background(), &replicate.NotifyToCopyRequest{
 		FileName:    filename,
-		DestAddress: src_ip,
-		SrcAddress:  dest_ip,
+		DestAddress: dest_ip,
+		SrcAddress:  src_ip,
 		From:        true,
 		SrcPort:     replicationPort,
 	})

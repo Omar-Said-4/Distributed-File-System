@@ -18,6 +18,7 @@ type heartbeatServer struct {
 
 func (s *heartbeatServer) Ping(ctx context.Context, req *heartbeat.HeartbeatPing) (*heartbeat.HeartbeatPong, error) {
 	_, ok := peer.FromContext(ctx)
+	// fmt.Printf("Ping from NodeID: %d\n", req.NodeId)
 	if !ok {
 		return nil, fmt.Errorf("failed to get peer info from context")
 	}
