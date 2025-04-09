@@ -52,10 +52,10 @@ func getRandomPort() string {
 	port := listener.Addr().(*net.TCPAddr).Port
 	return strconv.Itoa(port)
 }
-func Register(port string) (uint32, string, string, string) {
+func Register(serverIp string, port string) (uint32, string, string, string) {
 	ip := getLocalIP() // Get actual local IP
 	// Establish a new connection each time
-	conn, err := grpc.NewClient(ip+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(serverIP+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Println("Failed to connect:", err)
 		return 1000000000, "", "", "" // Return a large number as ID to indicate failure
