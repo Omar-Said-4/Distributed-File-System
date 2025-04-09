@@ -1,0 +1,5 @@
+src/copies/*
+src/uploads/*
+src/downloads/*
+src/client/.*mp4
+src/client/.*wmv

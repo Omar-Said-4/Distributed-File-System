@@ -25,7 +25,7 @@ var serverIP string
 var serverPort string
 
 func getFilePath(filename string) (string, error) {
-	absPath, err := filepath.Abs(filepath.Join("../copies", filename))
+	absPath, err := filepath.Abs(filepath.Join("../uploads", filename))
 	if err != nil {
 		return "", err
 	}
@@ -175,7 +175,7 @@ func RequestACopy(serverIP string, serverPort string, filename string, ip string
 		}
 		if data := resp.GetFileInfo(); data != nil {
 			fmt.Printf("Starting new copy: %s\n", data.FileName)
-			file, err = os.Create(filepath.Join("../copies", filename))
+			file, err = os.Create(filepath.Join("../uploads", filename))
 			if err != nil {
 				fmt.Printf("Failed to create file: %v\n", err)
 				return
