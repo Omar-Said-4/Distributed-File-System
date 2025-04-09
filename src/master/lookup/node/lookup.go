@@ -30,6 +30,9 @@ type NodeHeap []*DataNode
 
 func (h NodeHeap) Len() int { return len(h) }
 func (h NodeHeap) Less(i, j int) bool {
+	fmt.Printf("Node Id %d Sum of files is %d\n", h[i].NodeId, int(h[i].n_files)+int(h[i].n_uploading))
+	fmt.Printf("Node Id %d Sum of files is %d\n", h[j].NodeId, int(h[j].n_files)+int(h[j].n_uploading))
+
 	return int(h[i].n_files)+int(h[i].n_uploading) < int(h[j].n_files)+int(h[j].n_uploading)
 }
 func (h NodeHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
@@ -240,6 +243,12 @@ func (table *NodeLookup) AddUploadingFile(nodeId uint32, filename string, othern
 	table.table[nodeId].uploading = append(table.table[nodeId].uploading, uploading{filename, othernode, src})
 	if !src {
 		table.table[nodeId].n_uploading++
+		for i, n := range table.heap {
+			if n.NodeId == nodeId {
+				heap.Fix(&table.heap, i)
+				break
+			}
+		}
 	}
 }
 func (table *NodeLookup) RemoveUploadingFile(nodeId uint32, filename string) uint32 {
@@ -251,6 +260,12 @@ func (table *NodeLookup) RemoveUploadingFile(nodeId uint32, filename string) uin
 			table.table[nodeId].uploading = append(table.table[nodeId].uploading[:i], table.table[nodeId].uploading[i+1:]...)
 			if !f.src {
 				table.table[nodeId].n_uploading--
+				for i, n := range table.heap {
+					if n.NodeId == nodeId {
+						heap.Fix(&table.heap, i)
+						break
+					}
+				}
 			}
 			return otherId
 		}
