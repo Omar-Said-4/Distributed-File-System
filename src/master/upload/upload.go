@@ -4,7 +4,6 @@ import (
 	"context"
 	lookup "dfs/master/lookup/file"
 	lookup2 "dfs/master/lookup/node"
-	"dfs/master/replicate"
 	"dfs/schema/upload"
 	"fmt"
 
@@ -38,8 +37,8 @@ func (s *uploadServer) NotifyMaster(ctx context.Context, req *upload.NotifyMaste
 	NodesTable.IncrementNumberOfFiles(nodeID)
 	NodesTable.AddFileToNode(nodeID, filename)
 	// replicate the file to 2 nodes
-	go replicate.NotifyClients(filename, nodeID)
-	go replicate.NotifyClients(filename, nodeID)
+	// go replicate.NotifyClients(filename, nodeID)
+	// go replicate.NotifyClients(filename, nodeID)
 	fmt.Printf("Notified clients to Copy for file %s\n", filename)
 
 	return &upload.NotifyMasterResponse{}, nil

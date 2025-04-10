@@ -40,7 +40,15 @@ func RequestDownloadInfo(filename, ip, port string) error {
 	chunkData := make([][]byte, n_nodes)
 	mu := sync.Mutex{}
 	var wg sync.WaitGroup
-	bar := progressbar.DefaultBytes(int64(filesize), "Downloading")
+	progressBars := make([]*progressbar.ProgressBar, n_nodes)
+	for i := 0; i < n_nodes; i++ {
+		startByte := uint64(i) * chunksize
+		endByte := uint64(i+1) * chunksize
+		if i == n_nodes-1 {
+			endByte = filesize
+		}
+		progressBars[i] = progressbar.DefaultBytes(int64(endByte-startByte), fmt.Sprintf("Downloading from node %d", i))
+	}
 
 	for i, node := range nodes {
 		startByte := uint64(i) * chunksize
@@ -49,9 +57,9 @@ func RequestDownloadInfo(filename, ip, port string) error {
 			endByte = filesize
 		}
 		wg.Add(1)
-		go func() {
+		go func(i int, startByte uint64, endByte uint64, node *download.IPPort) {
 			defer wg.Done()
-			data, err := requestChunk(filename, node.Ip, node.Port, startByte, endByte, bar)
+			data, err := requestChunk(filename, node.Ip, node.Port, startByte, endByte, progressBars[i])
 			if err != nil {
 				fmt.Printf("failed to request chunk from %s:%s: %v\n", node.Ip, node.Port, err)
 				return
@@ -59,8 +67,8 @@ func RequestDownloadInfo(filename, ip, port string) error {
 			mu.Lock()
 			chunkData[i] = data
 			mu.Unlock()
-			fmt.Printf("Downloaded chunk %d from %s:%s\n", i, node.Ip, node.Port)
-		}()
+			fmt.Printf("\nDownloaded chunk %d from %s:%s\n", i, node.Ip, node.Port)
+		}(i, startByte, endByte, node)
 	}
 	wg.Wait()
 	cleaned_filename := cleanFilename(filename)
