@@ -74,7 +74,6 @@ func main() {
 			return
 		}
 	} else {
-		id = uint32(config.NodeID)
 		err := DeleteAllFiles("uploads")
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)

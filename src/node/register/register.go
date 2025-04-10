@@ -73,6 +73,7 @@ func Register(serverIp string, port string, old_id int64) (uint32, string, strin
 		fmt.Println("Registration failed:", err)
 	} else {
 		fmt.Println("Registered successfully with IP:", ip)
+		fmt.Println("Node ID:", resp.Id)
 	}
 
 	conn.Close()
