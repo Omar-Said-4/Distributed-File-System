@@ -4,3 +4,4 @@ src/downloads/*
 src/client/.*mp4
 src/client/.*wmv
 src/client/Docker.exe
+src/client/Msim.exe

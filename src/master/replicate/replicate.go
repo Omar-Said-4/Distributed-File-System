@@ -56,7 +56,7 @@ func NotifyClients(filename string, id uint32) {
 	}
 	nodeId, err := getNodeIdToCopyTo(filename)
 	// fmt.Printf("Node ID to replicate from %d", nodeId)
-	if err != nil {
+	if err != nil || FilesTable.GetNumberOfReplicas(filename)+FilesTable.GetNumberUploading(filename) > 3 {
 		fmt.Printf("Failed to get node to copy to for file %s: %v\n", filename, err)
 		FilesTable.DecrementNumberUploading(filename)
 		return

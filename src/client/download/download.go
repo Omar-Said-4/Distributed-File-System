@@ -52,6 +52,9 @@ func RequestDownloadInfo(filename, ip, port string) error {
 	chunkData := make([][]byte, n_nodes)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	errChan := make(chan error, n_nodes)
 
 	progressBar := progressbar.DefaultBytes(int64(filesize), "Downloading...")
 
@@ -64,9 +67,16 @@ func RequestDownloadInfo(filename, ip, port string) error {
 		wg.Add(1)
 		go func(i int, startByte uint64, endByte uint64, node *download.IPPort) {
 			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
 			data, err := requestChunk(filename, node.Ip, node.Port, startByte, endByte, progressBar, &mu)
 			if err != nil {
 				fmt.Printf("failed to request chunk from %s:%s: %v\n", node.Ip, node.Port, err)
+				errChan <- err
+				cancel()
 				return
 			}
 			chunkData[i] = data
@@ -74,6 +84,10 @@ func RequestDownloadInfo(filename, ip, port string) error {
 		}(i, startByte, endByte, node)
 	}
 	wg.Wait()
+	close(errChan)
+	if err := <-errChan; err != nil {
+		return fmt.Errorf("download failed: %v", err)
+	}
 	cleaned_filename := cleanFilename(filename)
 	out_path := fmt.Sprintf("../downloads/%s", cleaned_filename)
 	file, err := os.Create(out_path)
