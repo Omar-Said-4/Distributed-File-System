@@ -74,7 +74,7 @@ func main() {
 			return
 		}
 	} else {
-		err := DeleteAllFiles("uploads")
+		err := DeleteAllFiles("../uploads")
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 		} else {
