@@ -30,8 +30,8 @@ type NodeHeap []*DataNode
 
 func (h NodeHeap) Len() int { return len(h) }
 func (h NodeHeap) Less(i, j int) bool {
-	fmt.Printf("Node Id %d Sum of files is %d\n", h[i].NodeId, int(h[i].n_files)+int(h[i].n_uploading))
-	fmt.Printf("Node Id %d Sum of files is %d\n", h[j].NodeId, int(h[j].n_files)+int(h[j].n_uploading))
+	// fmt.Printf("Node Id %d Sum of files is %d\n", h[i].NodeId, int(h[i].n_files)+int(h[i].n_uploading))
+	// fmt.Printf("Node Id %d Sum of files is %d\n", h[j].NodeId, int(h[j].n_files)+int(h[j].n_uploading))
 
 	return int(h[i].n_files)+int(h[i].n_uploading) < int(h[j].n_files)+int(h[j].n_uploading)
 }
