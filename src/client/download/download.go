@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/schollz/progressbar/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -39,6 +40,8 @@ func RequestDownloadInfo(filename, ip, port string) error {
 	chunkData := make([][]byte, n_nodes)
 	mu := sync.Mutex{}
 	var wg sync.WaitGroup
+	bar := progressbar.DefaultBytes(int64(filesize), "Downloading")
+
 	for i, node := range nodes {
 		startByte := uint64(i) * chunksize
 		endByte := uint64(i+1) * chunksize
@@ -48,7 +51,7 @@ func RequestDownloadInfo(filename, ip, port string) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			data, err := requestChunk(filename, node.Ip, node.Port, startByte, endByte)
+			data, err := requestChunk(filename, node.Ip, node.Port, startByte, endByte, bar)
 			if err != nil {
 				fmt.Printf("failed to request chunk from %s:%s: %v\n", node.Ip, node.Port, err)
 				return
@@ -81,7 +84,7 @@ func RequestDownloadInfo(filename, ip, port string) error {
 
 }
 
-func requestChunk(filename, ip, port string, startByte uint64, endByte uint64) ([]byte, error) {
+func requestChunk(filename, ip, port string, startByte uint64, endByte uint64, bar *progressbar.ProgressBar) ([]byte, error) {
 	conn, err := grpc.NewClient(ip+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to server at %s:%s - error: %v", ip, port, err)
@@ -107,6 +110,7 @@ func requestChunk(filename, ip, port string, startByte uint64, endByte uint64) (
 			return nil, fmt.Errorf("failed to download chunk of file %s: %v", filename, err)
 		}
 		data = append(data, resp.Chunk...)
+		bar.Add(len(resp.Chunk))
 	}
 	return data, nil
 }

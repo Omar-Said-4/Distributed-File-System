@@ -59,9 +59,9 @@ func main() {
 	var id uint32
 	var Fport string
 	var RepPort string
-	fmt.Printf("Server ip %s\n",config.ServerIP)
+	fmt.Printf("Server ip %s\n", config.ServerIP)
 	if config.NodeID == -1 {
-		id, Fport, RepPort, _ = register.Register(config.ServerIP,config.ServerPort)
+		id, Fport, RepPort, _ = register.Register(config.ServerIP, config.ServerPort)
 		config.NodeID = int(id)
 		jsonData, err := json.MarshalIndent(config, "", "    ")
 		if err != nil {
@@ -74,7 +74,7 @@ func main() {
 			return
 		}
 	} else {
-		id = config.NodeID
+		id = uint32(config.NodeID)
 		err := DeleteAllFiles("uploads")
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
@@ -94,14 +94,14 @@ func main() {
 		defer wg.Done() // Mark goroutine as finished
 		heartbeat.PingServer(config.ServerIP, config.ServerPort, id)
 	}()
-	upload.StartUploadServer(Fport, "localhost", "5052", id, s)
+	upload.StartUploadServer(Fport, config.ServerIP, config.ServerPort, id, s)
 	// wg.Add(1)
 	// go func() {
 	// 	defer wg.Done() // Mark goroutine as finished
 	// 	replicate.StartNotifytoCopyServer(NotifyToCopyPort, id)
 	// }()
 
-	replicate.StartReplicateServer(config.ServerIP,config.ServerPort,RepPort, id, s)
+	replicate.StartReplicateServer(config.ServerIP, config.ServerPort, RepPort, id, s)
 	download.StartDownloadServer(Fport, s)
 	if err := s.Serve(lis); err != nil {
 		fmt.Printf("failed to serve: %v\n", err)

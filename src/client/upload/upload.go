@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/schollz/progressbar/v3"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -41,6 +43,13 @@ func UploadFile(id string, filename string, ip string, port string) {
 		return
 	}
 	defer file.Close()
+	fileStat, err := file.Stat()
+	if err != nil {
+		fmt.Printf("Failed to get file info: %v\n", err)
+		return
+	}
+	fileSize := fileStat.Size()
+
 	conn, err := grpc.NewClient(ip+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Printf("Failed to connect to server at %s:%s - Error: %v\n", ip, port, err)
@@ -61,6 +70,8 @@ func UploadFile(id string, filename string, ip string, port string) {
 		return
 	}
 	buf := make([]byte, chunkSize)
+	bar := progressbar.DefaultBytes(fileSize, "Uploading")
+
 	for {
 		n, err := file.Read(buf)
 		if err == io.EOF {
@@ -77,6 +88,8 @@ func UploadFile(id string, filename string, ip string, port string) {
 			fmt.Printf("Failed to send chunk: %v\n", err)
 			return
 		}
+		bar.Add(n)
+
 	}
 	_, err = stream.CloseAndRecv()
 	if err != nil {

@@ -229,7 +229,7 @@ func ConfirmCopy(serverIP, Port, filename string) {
 	file_path, _ := getFilePath(filename)
 	conn, err := grpc.NewClient(serverIP+":"+Port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		fmt.Printf("Failed to connect to master at %s - Error: %v\n", "localhost:5052", err)
+		fmt.Printf("Failed to connect to master at %s - Error: %v\n", serverIP+":"+serverPort, err)
 		return
 	}
 	defer conn.Close()
