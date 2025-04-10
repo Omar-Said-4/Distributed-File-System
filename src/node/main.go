@@ -60,8 +60,8 @@ func main() {
 	var Fport string
 	var RepPort string
 	fmt.Printf("Server ip %s\n", config.ServerIP)
+	id, Fport, RepPort, _ = register.Register(config.ServerIP, config.ServerPort, int64(config.NodeID))
 	if config.NodeID == -1 {
-		id, Fport, RepPort, _ = register.Register(config.ServerIP, config.ServerPort)
 		config.NodeID = int(id)
 		jsonData, err := json.MarshalIndent(config, "", "    ")
 		if err != nil {

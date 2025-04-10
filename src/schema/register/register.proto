@@ -11,6 +11,7 @@ message RegisterRequest {
     string file_port = 2;
     string replication_port = 3;
     string NotifyToCopyPort = 4;
+    int64 OldId = 5;
 
 }
 message RegisterResponse {

@@ -79,6 +79,17 @@ func (table *NodeLookup) AddDataNode(nodeId uint32, ip string, filePort string, 
 	table.n_nodes++
 	fmt.Printf("Node %d added to lookup table\n", nodeId)
 }
+func (table *NodeLookup) EditDataNode(nodeId uint32, ip string, filePort string, replicationPort string, ncopyport string) {
+	table.mutex.Lock()
+	defer table.mutex.Unlock()
+	if _, ok := table.table[nodeId]; ok {
+		table.table[nodeId].Ip = ip
+		table.table[nodeId].FilePort = filePort
+		table.table[nodeId].ReplicationPort = replicationPort
+		table.table[nodeId].NotifyToCopyPort = ncopyport
+		fmt.Printf("Node %d edited in lookup table, new IP %s, new Port %s\n", nodeId, ip, filePort)
+	}
+}
 func (table *NodeLookup) RemoveDataNode(nodeId uint32) {
 	table.mutex.Lock()
 	defer table.mutex.Unlock()

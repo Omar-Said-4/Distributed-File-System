@@ -52,7 +52,7 @@ func getRandomPort() string {
 	port := listener.Addr().(*net.TCPAddr).Port
 	return strconv.Itoa(port)
 }
-func Register(serverIp string, port string) (uint32, string, string, string) {
+func Register(serverIp string, port string, old_id int64) (uint32, string, string, string) {
 	ip := getLocalIP() // Get actual local IP
 	// Establish a new connection each time
 	conn, err := grpc.NewClient(serverIp+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -67,8 +67,8 @@ func Register(serverIp string, port string) (uint32, string, string, string) {
 	Nport := getRandomPort()
 	// Rport := getRandomPort()
 	// nCopyport := getRandomPort()
-	fmt.Println("Registering with IP:", ip, "FilePort:", Nport, "ReplicationPort:", Nport, "NotifyToCopyPort:", Nport)
-	resp, err := c.Register(context.Background(), &register.RegisterRequest{Ip: ip, FilePort: Nport, ReplicationPort: Nport, NotifyToCopyPort: Nport})
+	fmt.Println("Registering with IP:", ip, "FilePort:", Nport, "ReplicationPort:", Nport, "NotifyToCopyPort:", Nport, "OldId:", old_id)
+	resp, err := c.Register(context.Background(), &register.RegisterRequest{Ip: ip, FilePort: Nport, ReplicationPort: Nport, NotifyToCopyPort: Nport, OldId: old_id})
 	if err != nil || !resp.Success {
 		fmt.Println("Registration failed:", err)
 	} else {

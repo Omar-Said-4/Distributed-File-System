@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"os/exec"
 	"regexp"
 	"sync"
 
@@ -15,6 +16,17 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+func runProgressBarInNewTerminal(i int, startByte, endByte uint64, node *download.IPPort, filename string) {
+	// Start a new terminal process for the progress bar
+	cmd := exec.Command("gnome-terminal", "--", "bash", "-c", fmt.Sprintf("go run progressbar.go %d %d %d %s %s", i, startByte, endByte, node.Ip, filename))
+	err := cmd.Start()
+	if err != nil {
+		fmt.Printf("Error launching terminal for node %d: %v\n", i, err)
+		return
+	}
+
+	cmd.Wait() // Wait for the terminal process to finish
+}
 func cleanFilename(filename string) string {
 	re := regexp.MustCompile(`^[^_]+_\d+_`)
 	return re.ReplaceAllString(filename, "")
@@ -38,17 +50,10 @@ func RequestDownloadInfo(filename, ip, port string) error {
 	chunksize := uint64(math.Ceil(float64(filesize) / float64(n_nodes)))
 	fmt.Printf("To be Downloaded Filesize: %d, n_nodes: %d, chunksize: %d\n", filesize, n_nodes, chunksize)
 	chunkData := make([][]byte, n_nodes)
-	mu := sync.Mutex{}
 	var wg sync.WaitGroup
-	progressBars := make([]*progressbar.ProgressBar, n_nodes)
-	for i := 0; i < n_nodes; i++ {
-		startByte := uint64(i) * chunksize
-		endByte := uint64(i+1) * chunksize
-		if i == n_nodes-1 {
-			endByte = filesize
-		}
-		progressBars[i] = progressbar.DefaultBytes(int64(endByte-startByte), fmt.Sprintf("Downloading from node %d", i))
-	}
+	var mu sync.Mutex
+
+	progressBar := progressbar.DefaultBytes(int64(filesize), "Downloading...")
 
 	for i, node := range nodes {
 		startByte := uint64(i) * chunksize
@@ -59,14 +64,12 @@ func RequestDownloadInfo(filename, ip, port string) error {
 		wg.Add(1)
 		go func(i int, startByte uint64, endByte uint64, node *download.IPPort) {
 			defer wg.Done()
-			data, err := requestChunk(filename, node.Ip, node.Port, startByte, endByte, progressBars[i])
+			data, err := requestChunk(filename, node.Ip, node.Port, startByte, endByte, progressBar, &mu)
 			if err != nil {
 				fmt.Printf("failed to request chunk from %s:%s: %v\n", node.Ip, node.Port, err)
 				return
 			}
-			mu.Lock()
 			chunkData[i] = data
-			mu.Unlock()
 			fmt.Printf("\nDownloaded chunk %d from %s:%s\n", i, node.Ip, node.Port)
 		}(i, startByte, endByte, node)
 	}
@@ -92,7 +95,7 @@ func RequestDownloadInfo(filename, ip, port string) error {
 
 }
 
-func requestChunk(filename, ip, port string, startByte uint64, endByte uint64, bar *progressbar.ProgressBar) ([]byte, error) {
+func requestChunk(filename, ip, port string, startByte uint64, endByte uint64, bar *progressbar.ProgressBar, mu *sync.Mutex) ([]byte, error) {
 	conn, err := grpc.NewClient(ip+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to server at %s:%s - error: %v", ip, port, err)

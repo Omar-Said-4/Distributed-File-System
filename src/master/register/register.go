@@ -20,8 +20,15 @@ func (s *registerServer) Register(ctx context.Context, req *register.RegisterReq
 	replication_port := req.ReplicationPort
 	ncopyPort := req.NotifyToCopyPort
 	ip := req.Ip
-	node_id := NodesTable.GetNodeCount()
-	NodesTable.AddDataNode(node_id, ip, file_port, replication_port, ncopyPort)
+	old_id := req.OldId
+	var node_id uint32
+	if old_id == -1 {
+		node_id := NodesTable.GetNodeCount()
+		NodesTable.AddDataNode(node_id, ip, file_port, replication_port, ncopyPort)
+	} else {
+		node_id = uint32(old_id)
+		NodesTable.EditDataNode(node_id, ip, file_port, replication_port, ncopyPort)
+	}
 	return &register.RegisterResponse{Id: node_id, Success: true}, nil
 }
 
