@@ -26,7 +26,11 @@ func getSourceMachine(filename string) (uint32, string) {
 func FilesCheck() {
 	for {
 		files := table.GetFileNames()
+		if len(files) == 0 {
+			fmt.Print("No files in the system\n")
+		}
 		for _, file := range files {
+			fmt.Printf(file)
 			total_num := table.GetNumberUploading(file) + table.GetNumberOfReplicas(file)
 			i := total_num
 			for i < 3 {

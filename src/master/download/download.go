@@ -23,15 +23,20 @@ func (s *downloadServer) RequestDownloadInfo(ctx context.Context, req *download.
 	}
 
 	filename := req.GetFileName()
-
+	// fmt.Print(filename)
 	nodeId, r1, r2, err := FilesTable.GetFileLocation(filename)
 	if err != nil {
+		fmt.Print("After getting file location")
 		return nil, err
 	}
 	fmt.Printf("Nodes for file %s: %d, %d, %d\n", filename, nodeId, r1, r2)
 	node1_ip, node1_port := NodesTable.GetNodeFileService(nodeId)
 	node2_ip, node2_port := NodesTable.GetNodeFileService(r1)
 	node3_ip, node3_port := NodesTable.GetNodeFileService(r2)
+	if node1_ip == "" && node1_port == "" && node2_ip == "" && node2_port == "" && node3_ip == "" && node3_port == "" {
+		fmt.Print("No Copies of the file are found :(")
+		return nil, fmt.Errorf("No Copies of the file are found :(")
+	}
 	return &download.MasterDownloadResponse{
 		IpPorts: []*download.IPPort{
 			{Ip: node1_ip, Port: node1_port},

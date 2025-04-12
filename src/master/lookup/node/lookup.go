@@ -106,11 +106,29 @@ func (table *NodeLookup) RemoveDataNode(nodeId uint32) {
 func (table *NodeLookup) GetNodeFileService(nodeId uint32) (string, string) {
 	table.mutex.RLock()
 	defer table.mutex.RUnlock()
+	if len(table.heap) == 0 {
+		fmt.Printf("No nodes registered in the system\n")
+		return "", ""
+	}
+	_, ok := table.table[nodeId]
+	if !ok {
+		fmt.Printf("Node with ID %d not found in NodeLookup\n", nodeId)
+		return "", ""
+	}
 	return table.table[nodeId].Ip, table.table[nodeId].FilePort
 }
 func (table *NodeLookup) GetNodeReplicationService(nodeId uint32) (string, string) {
 	table.mutex.RLock()
 	defer table.mutex.RUnlock()
+	if len(table.heap) == 0 {
+		fmt.Printf("No nodes registered in the \n")
+		return "", ""
+	}
+	_, ok := table.table[nodeId]
+	if !ok {
+		fmt.Printf("Node with ID %d not found in NodeLookup\n", nodeId)
+		return "", ""
+	}
 	return table.table[nodeId].Ip, table.table[nodeId].ReplicationPort
 }
 func (table *NodeLookup) GetNodeAlive(nodeId uint32) bool {
@@ -215,7 +233,7 @@ func (table *NodeLookup) GetLeastLoadedNodes(n int) []uint32 {
 	}
 	// handle case where n > number of nodes
 
-	for len(result) < n {
+	for len(result) < n && len(result) > 0 {
 		fmt.Printf("len result: %d, len heap: %d\n", len(result), len(table.heap))
 		result = append(result, result[i%len(result)])
 		i++

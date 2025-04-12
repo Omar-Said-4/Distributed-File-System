@@ -24,8 +24,15 @@ type replicateServer struct {
 }
 
 func getNodeIdToCopyTo(filename string) (uint32, error) {
-	nodeId, r1, r2, _ := FilesTable.GetFileLocation(filename)
+	nodeId, r1, r2, err := FilesTable.GetFileLocation(filename)
+	if err != nil {
+		fmt.Print("File Is not on the \n")
+		return 0, fmt.Errorf("File is not on the system\n")
+	}
 	ids := NodesTable.GetLeastLoadedNodes(3)
+	if len(ids) == 0 {
+		return 0, fmt.Errorf("No nodes registered in the system\n")
+	}
 	if nodeId != ids[0] && r1 != ids[0] && r2 != ids[0] {
 		return ids[0], nil
 	}
