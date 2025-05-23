@@ -33,7 +33,7 @@ As distributed systems grow more prevalent, the ability to design and implement 
 
 ```text
                            +------------------+
-                           |  Master Tracker  |  <----------------------------------│
+                           |  Master Tracker  |  <-----------------------------------
                            +------------------+                                     │
                             ▲    ▲    ▲    ▲                                        │
          gRPC (control)     │    │    │    │     gRPC (control)                     │
