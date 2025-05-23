@@ -33,7 +33,7 @@ As distributed systems grow more prevalent, the ability to design and implement 
 
 ```text
                            +------------------+
-                           |  Master Tracker  |  <-----------------------------------
+                           |  Master Tracker  |  <----------------------------------+
                            +------------------+                                     │
                             ▲    ▲    ▲    ▲                                        │
          gRPC (control)     │    │    │    │     gRPC (control)                     │
@@ -46,14 +46,14 @@ As distributed systems grow more prevalent, the ability to design and implement 
 +----------------+     +----------------+         +----------------+                │
 | Data Keeper 1  |     | Data Keeper 2  |         | Data Keeper 3  |                │
 +----------------+     +----------------+         +----------------+                │
-                                                                                    │
-           ^                    ^                         ^                         │
+                              ^                                                     │
+           ^                  |                           ^                         │
            |     gRPC Streams (File Transfer)             |                         │
            +----------------------------------------------+                         │
                               |                                                     │
-         gRPC (metadata)      v                                                     │
-                       +-------------+                                              │
-                       |   Client    | ---------------------------------------------+
+                              v                                                     │
+                       +-------------+                     gRPC (metadata)          │
+                       |   Client    | <--------------------------------------------+
                        +-------------+
 ```
 
